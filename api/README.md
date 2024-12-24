@@ -31,3 +31,10 @@ Run Command:
 ```
 npm start
 ```
+
+![Ekran görüntüsü 2024-12-24 100459](https://github.com/user-attachments/assets/5103f1ec-0609-4558-8381-20c9102b9980)
+
+
+
+
+
