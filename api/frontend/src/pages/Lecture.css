@@ -1,0 +1,30 @@
+.container {
+    background-color: #f8f9fa;
+    padding: 20px;
+    border-radius: 10px;
+}
+
+.table {
+    margin-top: 20px;
+    background-color: #ffffff;
+    border-radius: 10px;
+}
+
+.table thead th {
+    background-color: #007bff;
+    color: #ffffff;
+}
+
+.form-control, .form-select {
+    margin-bottom: 15px;
+}
+
+.list-group-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.alert {
+    margin-top: 15px;
+}

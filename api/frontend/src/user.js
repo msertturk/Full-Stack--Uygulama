@@ -1,11 +1,9 @@
 import { useEffect, useState, useCallback } from "react";
-import { Container, Row, Col, Table, Pagination, Form, Button, Alert, Modal } from "react-bootstrap";
-import Loader from '../components/Loader'; // Doğru yolu belirtin
+import { Container, Row, Col, Table, Pagination, Form, Button, Alert, ListGroup } from "react-bootstrap";
 import './User.css'; // Ayrı bir CSS dosyası ekleyelim
 
 export default function User() {
     const [users, setUsers] = useState([]);
-    const [loading, setLoading] = useState(true); // Yeni state ekleme
     const [selectedUser, setSelectedUser] = useState({
         identityNo: '',
         name: '',
@@ -21,7 +19,6 @@ export default function User() {
     const handleClose = () => setShow(false);
 
     const loadUsers = useCallback(() => {
-        setLoading(true); // Yükleniyor durumunu başlat
         fetch(`http://localhost:8080/api/users?page=${currentPage - 1}`)
             .then(res => res.json())
             .then((result) => {
@@ -35,12 +32,10 @@ export default function User() {
                     );
                 }
                 setPageItems(items);
-                setLoading(false); // Yükleniyor durumunu bitir
             })
             .catch((error) => {
                 console.error("Error loading users:", error);
                 setErrorMessage("Kullanıcılar yüklenirken bir hata oluştu.");
-                setLoading(false); // Yükleniyor durumunu bitir
             });
     }, [currentPage]);
 
@@ -116,10 +111,6 @@ export default function User() {
             console.error("Error deleting user:", error);
             setErrorMessage("Kullanıcı silinirken bir hata oluştu.");
         });
-    }
-
-    if (loading) { // Yükleniyor durumunu kontrol et
-        return <Loader />;
     }
 
     return (
@@ -199,7 +190,7 @@ export default function User() {
                                 aria-label="Please select gender"
                                 value={selectedUser.gender}
                                 name='gender'
-                                onChange={handleInputChange}
+                                onChange={(e) => handleInputChange(e)}
                             >
                                 <option>Please select gender</option>
                                 <option value='MALE'>Male</option>
@@ -212,7 +203,7 @@ export default function User() {
                                 aria-label="Please select role"
                                 value={selectedUser.role}
                                 name='role'
-                                onChange={handleInputChange}
+                                onChange={(e) => handleInputChange(e)}
                             >
                                 <option>Please select role</option>
                                 <option value='STUDENT'>Student</option>

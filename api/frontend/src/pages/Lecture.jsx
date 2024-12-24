@@ -1,8 +1,11 @@
-import { useEffect, useState } from "react";
-import { Container, Row, Col, Table, Pagination, Form, Button, Alert, Modal, ListGroup } from "react-bootstrap";
+import { useEffect, useState, useCallback } from "react";
+import { Container, Row, Col, Table, Pagination, Form, Button, Alert, ListGroup } from "react-bootstrap";
+import Loader from '../components/Loader'; // Doğru yolu belirtin
+import './Lecture.css'; // Doğru yolu belirtin
 
 export default function Lecture() {
     const [lectures, setLectures] = useState([]);
+    const [loading, setLoading] = useState(true); // Yeni state ekleme
     const [currentPage, setCurrentPage] = useState(1);
     const [pageItems, setPageItems] = useState([]);
     const [teachers, setTeachers] = useState([]);
@@ -13,11 +16,47 @@ export default function Lecture() {
         teacher: {},
         students: []
     });
+    const [errorMessage, setErrorMessage] = useState(null);
+
+    const loadLectures = useCallback(() => {
+        setLoading(true); // Yükleniyor durumunu başlat
+        fetch(`http://localhost:8080/api/lectures?page=${currentPage - 1}`)
+            .then(res => res.json())
+            .then((result) => {
+                setLectures(result.content);
+                let items = [];
+                for (let index = 1; index <= result.totalPages; index++) {
+                    items.push(
+                        <Pagination.Item key={index} active={currentPage === index} onClick={() => setCurrentPage(index)}>
+                            {index}
+                        </Pagination.Item>
+                    );
+                }
+                setPageItems(items);
+                setLoading(false); // Yükleniyor durumunu bitir
+            })
+            .catch((error) => {
+                console.error("Error loading lectures:", error);
+                setErrorMessage("Dersler yüklenirken bir hata oluştu.");
+                setLoading(false); // Yükleniyor durumunu bitir
+            });
+    }, [currentPage]);
+
+    const loadTeachers = useCallback(() => {
+        fetch(`http://localhost:8080/api/users/by-role?role=TEACHER`)
+            .then(res => res.json())
+            .then((result) => {
+                setTeachers(result);
+            })
+            .catch((error) => {
+                console.error("Error loading teachers:", error);
+            });
+    }, []);
 
     useEffect(() => {
         loadLectures();
         loadTeachers();
-    }, [currentPage]);
+    }, [currentPage, loadLectures, loadTeachers]);
 
     function loadLectureStudents(lecture) {
         fetch('http://localhost:8080/api/users/potential-students', {
@@ -27,37 +66,12 @@ export default function Lecture() {
             body: JSON.stringify(lecture.students.map((st) => st.id))
         }).then((res) => res.json())
             .then((result) => {
-                console.log(result);
                 setLectureStudents(result);
+            })
+            .catch((error) => {
+                console.error("Error loading lecture students:", error);
             });
     }
-
-
-    function loadLectures() {
-        fetch(`http://localhost:8080/api/lectures?page=${currentPage - 1}`)
-            .then(res => res.json())
-            .then((result) => {
-                setLectures(result.content);
-                let items = [];
-                for (let index = 1; index <= result.totalPages; index++) {
-                    items.push(
-                        <Pagination.Item key={index} active={currentPage === index} onClick={() => setCurrentPage(index)} >
-                            {index}
-                        </Pagination.Item>
-                    );
-                    setPageItems(items);
-                }
-            });
-    }
-
-    function loadTeachers() {
-        fetch(`http://localhost:8080/api/users/by-role?role=TEACHER`)
-            .then(res => res.json())
-            .then((result) => {
-                setTeachers(result);
-            });
-    }
-
 
     function handleInputChange(e) {
         const { name, value } = e.target;
@@ -65,13 +79,26 @@ export default function Lecture() {
         setLectureStudents([]);
     }
 
+    function validateForm() {
+        if (selectedLecture.name.trim() === '') {
+            setErrorMessage("Ders ismi boş olamaz.");
+            return false;
+        }
+        if (!selectedLecture.teacherId) {
+            setErrorMessage("Bir öğretmen seçmelisiniz.");
+            return false;
+        }
+        return true;
+    }
+
     function createLecture() {
+        if (!validateForm()) return;
         const lecture = {
             name: selectedLecture.name,
             teacher: {
                 id: Number(selectedLecture.teacherId)
             }
-        }
+        };
 
         fetch('http://localhost:8080/api/lectures', {
             method: 'POST',
@@ -82,8 +109,10 @@ export default function Lecture() {
             .then((result) => {
                 loadLectures();
                 clearForm();
+            })
+            .catch((error) => {
+                console.error("Error creating lecture:", error);
             });
-
     }
 
     function clearForm() {
@@ -93,9 +122,8 @@ export default function Lecture() {
             teacher: {},
             students: []
         });
-
         setLectureStudents([]);
-
+        setErrorMessage(null);
     }
 
     function addStudent(student) {
@@ -110,6 +138,9 @@ export default function Lecture() {
             .then((result) => {
                 loadLectures();
                 clearForm();
+            })
+            .catch((error) => {
+                console.error("Error adding student:", error);
             });
     }
 
@@ -137,11 +168,17 @@ export default function Lecture() {
             .then((result) => {
                 loadLectures();
                 clearForm();
+            })
+            .catch((error) => {
+                console.error("Error removing student:", error);
             });
-
     }
 
-    return <>
+    if (loading) { // Yükleniyor durumunu kontrol et
+        return <Loader />;
+    }
+
+    return (
         <Container>
             <Row>
                 <Col sm={9}>
@@ -149,7 +186,7 @@ export default function Lecture() {
                         <thead>
                             <tr>
                                 <th>Id</th>
-                                <th>Name</th>
+                                <th>Lesson Name</th>
                                 <th>Teacher</th>
                             </tr>
                         </thead>
@@ -187,6 +224,11 @@ export default function Lecture() {
                 </Col>
                 <Col sm={3}>
                     <Form>
+                        {errorMessage ? (
+                            <Alert key='danger' variant='danger'>
+                                {errorMessage}
+                            </Alert>
+                        ) : ('')}
                         <Form.Group className="mb-3" controlId="name">
                             <Form.Label>Name</Form.Label>
                             <Form.Control
@@ -194,19 +236,18 @@ export default function Lecture() {
                                 autoComplete='off'
                                 placeholder='Name'
                                 name='name'
-                                maxLength={'11'}
                                 value={selectedLecture.name}
-                                onChange={(e) => handleInputChange(e)}
+                                onChange={handleInputChange}
                             />
                         </Form.Group>
 
-                        <Form.Group className="mb-3" controlId="teacherId">
+                        <Form.Group className="mb3" controlId="teacherId">
                             <Form.Label>Teacher</Form.Label>
                             <Form.Select
                                 aria-label="Please select teacher"
                                 name="teacherId"
                                 value={Number(selectedLecture.teacherId)}
-                                onChange={(e) => handleInputChange(e)}
+                                onChange={handleInputChange}
                             >
                                 <option>Please select teacher</option>
                                 {teachers.map((teacher) => (
@@ -222,9 +263,7 @@ export default function Lecture() {
                         {selectedLecture.name !== '' ?
                             <Button variant="outline-primary" type="button" onClick={clearForm}>
                                 Clear
-                            </Button> : ''
-
-                        }
+                            </Button> : ''}
                     </Form><br />
                     <ListGroup as='ol' numbered>
                         {lectureStudents.map((student) => (
@@ -241,5 +280,5 @@ export default function Lecture() {
                 </Col>
             </Row>
         </Container>
-    </>;
+    );
 }

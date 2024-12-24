@@ -4,11 +4,11 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import Layout from './layout/Layout';
 import User from './pages/User';
 import Lecture from './pages/Lecture';
-
+import ErrorBoundary from './components/ErrorBoundary'; // Doğru yolu belirtin
 
 function App() {
   return (
-    <>
+    <ErrorBoundary>
       <BrowserRouter>
         <Routes>
           <Route path='/' element={<Layout />}>
@@ -17,7 +17,7 @@ function App() {
           </Route>
         </Routes>
       </BrowserRouter>
-    </>
+    </ErrorBoundary>
   );
 }
 
